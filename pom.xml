@@ -19,7 +19,6 @@
 
   <properties>
       <guice.version>3.0</guice.version>
-      <org.testng.version>5.8</org.testng.version>
   </properties>
   <dependencies>
       <dependency>
@@ -30,23 +29,42 @@
       <dependency>
           <groupId>com.google.sitebricks</groupId>
           <artifactId>sitebricks</artifactId>
-          <version>0.8.5</version>
+          <version>0.8.6</version>
       </dependency>
+
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>1.5.5</version>
+      </dependency>
+      <dependency>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-classic</artifactId>
+          <version>0.9.9</version>
+      </dependency>
+      <dependency>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-core</artifactId>
+          <version>0.9.9</version>
+      </dependency>
+
+      <!--<dependency>
+          <groupId>com.google.sitebricks</groupId>
+          <artifactId>sitebricks-slf4j</artifactId>
+          <version>0.8.6</version>
+      </dependency>-->
+      <dependency>
+          <groupId>javax.mail</groupId>
+          <artifactId>mail</artifactId>
+          <version>1.4.5</version>
+      </dependency>
+
 
       <dependency>
           <groupId>org.apache.lucene</groupId>
           <artifactId>lucene-core</artifactId>
           <version>3.6.0</version>
       </dependency>
-      <!--
-     Uncomment the following to add Sitebricks Web Client to your project, a simple alternative
-     to Apache HTTP Client.
-    -->
-    <!--<dependency>-->
-        <!--<groupId>com.google.sitebricks</groupId>-->
-        <!--<artifactId>sitebricks-client</artifactId>-->
-        <!--<version>0.8.5</version>-->
-        <!--</dependency>-->
 
     <dependency>
         <groupId>org.mortbay.jetty</groupId>
@@ -65,14 +83,9 @@
     </dependency>
 
     <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>1.5.5</version>
-    </dependency>
-    <dependency>
         <groupId>org.testng</groupId>
         <artifactId>testng</artifactId>
-        <version>${org.testng.version}</version>
+        <version>5.8</version>
         <classifier>jdk15</classifier>
         <scope>test</scope>
     </dependency>
