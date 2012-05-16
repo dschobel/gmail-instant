@@ -1,10 +1,12 @@
 package io.das.instant.gmail.indexer;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
 import javax.activation.DataHandler;
 import javax.mail.*;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,51 +14,68 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
-public class IndexerService extends AbstractExecutionThreadService{
+public class IndexerService extends AbstractExecutionThreadService {
 
     private final IMessageProcessor _processor;
     private final MessageRepository _repository;
-    private BlockingQueue<Message> queue;
+    private final ExecutorService _executor = Executors.newCachedThreadPool();
 
-    public IndexerService(MessageRepository repository, IMessageProcessor processor)
-    {
+
+    private boolean _kill;
+
+    public IndexerService(MessageRepository repository, IMessageProcessor processor) throws Exception {
+
+        if (repository == null) {
+            throw new Exception("repository cannot be null");
+        }
+
+        if (processor == null) {
+            throw new Exception("processor cannot be null");
+        }
+
+        _kill = false;
         _processor = processor;
         _repository = repository;
     }
-    public void startUp(){
+
+    public void startUp() {
         logger.info("starting up");
-        Iterator m = _repository.GetMessages().iterator();
-        new LinkedBlockingQueue<Message>();
-        queue = new LinkedBlockingQueue<Message>();
     }
 
     public void run() throws InterruptedException {
-        Message toProcess;
-        while((toProcess = queue.take()) != SENTINEL)
-        {
-            _processor.Process(toProcess);
+        for (final Message message :  _repository.GetStream()) {
+            if(_kill) {
+                break;
+            }
+            _executor.submit(new Runnable() {
+                public void run() {
+                    _processor.Process(message);
+                }
+            });
         }
         logger.info("stopped");
     }
 
     public void triggerShutdown() {
         logger.info("shutting down...");
-        try {
-            queue.put(SENTINEL);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        _kill = true;
+//        try {
+//            queue.put(SENTINEL);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
-    private final SentinelMessage SENTINEL = new SentinelMessage();
+
+    //    private final SentinelMessage SENTINEL = new SentinelMessage();
     private final Logger logger = LoggerFactory.getLogger(IndexerService.class);
 
-    private class SentinelMessage extends Message{
+    private class SentinelMessage extends Message {
 
         @Override
         public Address[] getFrom() throws MessagingException {

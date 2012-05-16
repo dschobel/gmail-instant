@@ -1,19 +1,25 @@
 package io.das.instant.gmail.indexer;
 
 import com.google.common.base.Service;
+import com.google.common.collect.Lists;
+import com.sun.javaws.Globals;
+import com.sun.mail.smtp.SMTPMessage;
 import junit.framework.Assert;
+import org.mvel2.util.StringAppender;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.activation.DataHandler;
 import javax.mail.*;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.List;
+import java.util.concurrent.*;
 
 public class IndexerServiceUnitTests {
 
@@ -21,27 +27,26 @@ public class IndexerServiceUnitTests {
     IndexerService service;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
         CountingMessageProcessor counter = new CountingMessageProcessor();
-        service = new IndexerService(null,counter);
+//        try {
+//            service = new IndexerService(null,counter);
+//        } catch (Exception e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
 
         Assert.assertEquals(0,counter.getCount());
     }
 
-    //@Test
-    //public void startUp() {
-        // service.startUp();
-    //}
-
-    //@Test
-    //public void shutDown() {
-        // service.startUp();
-        // service.triggerShutdown();
-   // }
-
     @Test
-    public void all_messsages_are_received(){
-        service.start();
+    public void all_messsages_are_received() throws Exception {
+
+        CountingMessageProcessor counter = new CountingMessageProcessor();
+        MessageRepository r = new StubRepo(33);
+        service = new IndexerService(r,counter);
+        Assert.assertEquals(0, counter.getCount());
+        service.run();
+        Assert.assertEquals(33,counter.getCount());
     }
     @Test
     public void full_lifecycle() throws InterruptedException, ExecutionException {
@@ -52,11 +57,37 @@ public class IndexerServiceUnitTests {
         Assert.assertEquals(Service.State.TERMINATED, fs.get());
     }
 
+    private class StubRepo extends MessageRepository
+    {
+        private final int _countToGenerate;
+        public StubRepo(int count) throws Exception {
+            if(count < 0)
+                throw new Exception("count must be non-negative");
+            _countToGenerate = count;
+        }
+        @Override
+        public Iterable<Message> GetStream() {
+            ArrayList<Message> result = new ArrayList<Message>();
+            final Message msg = new StubMessage();
+            for(int i =0; i< _countToGenerate;i++){
+                result.add(msg);
+            }
+            return result;
+        }
+    }
     private class StubMessage extends Message
     {
+        public StubMessage()
+        {
+            _subject = "sample subject";
+            _content = "sample content";
+        }
+        private String _subject;
+        private String _content;
 
         @Override
         public Address[] getFrom() throws MessagingException {
+
             return new Address[0];  //To change body of implemented methods use File | Settings | File Templates.
         }
 
@@ -77,7 +108,24 @@ public class IndexerServiceUnitTests {
 
         @Override
         public Address[] getRecipients(RecipientType recipientType) throws MessagingException {
-            return new Address[0];  //To change body of implemented methods use File | Settings | File Templates.
+            Address sample = new Address() {
+                @Override
+                public String getType() {
+                    return "email";
+                }
+
+                @Override
+                public String toString() {
+                    return "dschobel@gmail.com";
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    return false;  //To change body of implemented methods use File | Settings | File Templates.
+                }
+            }         ;
+            return new Address[] {sample};
+
         }
 
         @Override
@@ -92,12 +140,12 @@ public class IndexerServiceUnitTests {
 
         @Override
         public String getSubject() throws MessagingException {
-            return null;  //To change body of implemented methods use File | Settings | File Templates.
+            return _subject;  //To change body of implemented methods use File | Settings | File Templates.
         }
 
         @Override
         public void setSubject(String s) throws MessagingException {
-            //To change body of implemented methods use File | Settings | File Templates.
+            _subject = s;
         }
 
         @Override
@@ -184,7 +232,7 @@ public class IndexerServiceUnitTests {
         }
 
         public Object getContent() throws IOException, MessagingException {
-            return null;  //To change body of implemented methods use File | Settings | File Templates.
+            return _content;  //To change body of implemented methods use File | Settings | File Templates.
         }
 
         public void setDataHandler(DataHandler dataHandler) throws MessagingException {
